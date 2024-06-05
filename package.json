@@ -4,7 +4,8 @@
   "description": "The command line of uiux",
   "dependencies": {
     "@babel/core": "7.15.0",
-    "@babel/preset-react": "7.14.5",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
     "babel-loader": "8.2.2",
     "copy-webpack-plugin": "^9.0.1",
     "css-loader": "6.2.0",
@@ -36,5 +37,12 @@
     "url": "https://github.com/akq/uiuxcli/issues"
   },
   "homepage": "https://github.com/akq/uiuxcli",
-  "license": "Apache 2.0"
+  "license": "Apache 2.0",
+  "devDependencies": {
+    "@babel/preset-env": "^7.24.6",
+    "@babel/preset-react": "^7.24.6",
+    "@babel/preset-typescript": "^7.24.6",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.4.5"
+  }
 }
