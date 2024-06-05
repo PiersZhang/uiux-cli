@@ -1,0 +1,323 @@
+#!/usr/bin/env node
+'use strict';
+
+var path = require('path')
+var { mapper } = require('../src/script/helper')
+var Fn = require('../src/script')
+
+var obj = {}, key, service
+var api = ['debug', 'dev', 'test', 'preview', 'build', 'proj', 'ver']//, 'clean']
+api = api.reduce((a,c)=>{a[c] = c;return a}, api)
+var Services = {
+    [api.debug]: ['generalDebug', {
+            base: {
+                v: 1
+                , msg: 'The base directory to contain all other branches, suppose cwd is ./master, default is the parent folder(..)'
+            }
+            , repo: {
+                v: 1
+                , msg: 'The repo url, default is the current origin'
+            }
+            , port: {
+                v: 1
+                , msg: 'the port for the host site, default is 1234'
+            }
+            , pull: {
+                v: 1
+                , msg: 'the flag to pull the latest codes or not when running the command. default is false'
+            }
+        }, 'dir' //no --xxx command
+    ]
+    , [api.dev]: [
+        'coreDebug' //the function name
+        , {
+            repo: {
+                v: 1 // option to arguments of func above, 1 means directly use the value
+                , msg: 'The repo url, default is the current origin'
+            } 
+            , port: {
+                v: 1
+                , msg: 'the port for the host site, default is 1234'
+            }
+            , pull: {
+                v: 1
+                , msg: 'the flag to pull the latest codes or not when running the command. default is false'
+            }
+            , branches: {
+                v: 'csv2arr' //string means the function name in mapper
+                , msg: 'branches need to be built, in csv form, default is all branches in the origin, except those branches starts with ! '
+            }
+            , excludes: {
+                v: 'csv2arr' //string means the function name in mapper
+                , msg: 'branches need to be excluded when start to build, in csv form, default is all branches in the origin, except those branches starts with ! '
+            }
+            , start: {
+                v: ['branches', 1] //array means pass the option value to the function branchesFn's second argument, then send the result to the branches 
+                , msg: 'the start branch name, like the main function, default is the current branch'
+            }
+            , remote: {
+                v: ['branches', 0] //array means pass the option value to the function branchesFn's second argument, then send the result to the branches 
+                , msg: 'the remote name to pull, default is origin'
+            }
+            , use: {
+                v: 'csv2arr'
+                , msg: 'port list dependencies'
+            }
+        }
+        , 'dir' //the last option to arguments of func above, which is no prefex double dash
+        , ['repo', 'branches'] //mandatory option
+    ]
+    , [api.test]: [
+        'runTest'
+        , {
+            src: {
+                v: 1
+                , msg: 'default is src, it\'s the source folder path if you specify some other as your source folder '
+            }
+            , domainUrl: {
+                v: 1
+                , msg: 'the url of domain.js, default is http://localhost:1234/domain.js'
+            }
+            , port: {
+                v: 1
+                , msg: 'the port of the local domain.js, default is 1234, when it\'s specified, the domainUrl will be http://localhost:[port]/domain.js'
+            }
+        }
+        , 'dir'
+    ]
+    , [api.preview]: [
+        'runPreviewer'
+        , {
+        }
+        , 'dir'
+    ]
+    , [api.ver]: [
+        'getVersion'
+        , {
+        }
+        // , 'dir'
+    ]
+    , [api.build]: [
+        'releaseOne'
+        , {
+            mode: {
+                v: 1
+                , msg: 'the release mode, production or development, development for not specifying this option or using dev, develop, development'
+                , eg: ['-', 'dev', 'develop', 'development', 'prod','production', ]
+            }
+        }
+        , 'dir' //the last option to arguments of func above, which is no prefex double dash
+    ]
+    , [api.proj]: [
+        'projCrud'
+        , {
+            add: {
+                v: 1
+                , msg: 'add a new project/branch from scratch'
+                , eg: ['sample', 'usr/sample']
+            }
+            , delete: {
+                v: 1
+                , msg: 'delete an existing project/branch'
+                , eg: ['sample', 'usr/sample']
+            }
+        }
+        , 'dir' //the last option to arguments of func above, which is no prefex double dash
+    ]
+}
+
+function svc(csv){
+    var c = csv.split(',')
+    return [c[0], c[1], c[0] + ' --'+c[1] +' <args>']
+}
+
+function help(status, arg) {
+    var print = (status === 0) ? console.log : console.error
+    var cmd = path.basename(process.argv[1])
+    switch(status){
+        case 1: 
+            print('no valid service available')
+            break
+        case 2: 
+            print('the service is not found: '+ arg)
+            break
+        case 3: 
+            var [s, o, c] = svc(arg)
+            print('the option "--'+o+'" is not found: '+ cmd + ' '+ c)
+            break
+        case 4: 
+            var [ o, c] = svc(arg)
+            print('the args is not found : '+ cmd + ' '+ c)
+            break
+
+
+    }
+    print()
+    print("Usage: " + cmd + " ["+api.join(' | ')+"] [--<options> <args>] [<dir>]")
+    for(var i in Services){
+        var opts = Services[i][1]
+        if(Object.keys(opts).length > 0){
+            print('\tAvailable options for service "' + i+'"')
+            for(var j in opts){
+                print('\t   --'+j+' <args>')
+                if(opts[j].msg) 
+                    print('\t     '+opts[j].msg)
+                var eg = opts[j].eg
+                if(eg){
+                    print('\t     //examples')
+                    if(typeof eg === 'string')
+                        eg = [eg]
+                    eg.forEach(x=>{
+                        if(x==='-')
+                            print('\t\t'+ [cmd, i].join(' '))
+                        else 
+                            print('\t\t'+ [cmd, i , '--'+j, x].join(' '))
+                    })
+                }
+            }
+        }
+        else
+            print('\tNo options avaiable for service "' + i+'"')
+
+    }
+    process.exit(status);
+}
+var cwd = process.cwd()
+
+
+var defaults = (arg)=>{
+    var curRemote, repo, curBranch, branches = ['master']
+    if(arg === api.debug || arg === api.dev){
+        try{
+            curRemote = mapper.currentRemote()
+        }
+        catch(e){}
+
+        if(curRemote){
+            repo = mapper.repoFn(curRemote)
+            curBranch = mapper.currentBranch()
+            branches = mapper.branchesFn(curRemote, curBranch)
+        }
+    }
+    switch(arg){
+        case api.debug:
+            return {
+                dir: cwd
+                , base: path.resolve(cwd, '..')
+                , repo
+                , port: 1234
+            }
+        case api.dev: 
+            return {
+                dir: repo? path.resolve(cwd, '..'): cwd
+                , repo
+                , branches
+                , port: 1234
+                // , debugPort: 1235 //TODO
+            }
+        case api.test: 
+            return {
+                dir: cwd
+                , src: 'src'
+            }
+        case api.build: 
+            return {
+                dir: repo? path.resolve(cwd, '..'): cwd
+                , repo
+                , branch: curBranch
+            }
+        
+    }
+    return {}
+
+} 
+// console.log(__dirname)
+var Invoker = {}
+var curSvc, curKey
+var arglen = process.argv.length 
+if (arglen <= 2) { 
+    help(1) 
+}
+
+for (var i = 2; i < arglen; ++i) {
+    var arg = process.argv[i];
+    if(!service){
+        if(i > 2) help(1)
+        if(Services[arg]){
+            service = Services[arg]
+            obj = {...defaults(arg)}//{...defaults[arg]}
+            curSvc = arg
+            continue
+        }
+        else{
+            // service is not found
+            help(2, arg)
+        }
+    }
+    
+    if (key) {
+        if(!arg){
+            help(4, `${curSvc},${curKey}`)
+        }
+        if(Array.isArray(key)){
+            var [fn, index] = key
+            if(!Invoker[fn]) Invoker[fn] = []
+            Invoker[fn][index] = arg
+            if(obj[fn]) obj[fn] = null
+        }
+        else if (typeof key === 'function'){
+            obj[curKey] = key(arg)
+        }
+        else {
+            obj[key] = arg
+        }
+        key = null
+    }
+    else if (arg.substr(0, 2) === '--'){
+        var k = curKey = arg.substr(2)
+        var {v: cmd} = service[1][k]
+        if(cmd === 1){
+            key = k
+        }
+        else if(typeof cmd === 'string'){
+            key = mapper[cmd]
+        }
+        else if(Array.isArray(cmd)){
+            key = cmd
+        }
+        else {
+            help(3, `${curSvc},${curKey}`)
+        }
+    }
+    else{
+        if(arg[0] === '.') 
+            arg = path.resolve(cwd, arg)
+        obj[service[2]] = arg
+    }
+
+}
+
+if(service[2] && !obj[service[2]]){
+    obj[service[2]] = path.resolve(cwd, '.')
+}
+
+if(!curSvc){
+    help(1)
+}
+if(key){
+    help(4, `${curSvc},${curKey}`)
+}
+for(var i in Invoker){
+    if(mapper[i+'Fn']){
+        obj[i] = obj[i] || mapper[i+'Fn'].apply(null, Invoker[i])
+    }
+}
+if(Object.keys(obj).length > 0)
+    console.log(JSON.stringify(obj, null, 2))
+if(service[3])
+    for(var s of service[3]){
+        if(obj[s] === undefined){
+            help(3, `${curSvc},${s}`)
+        }
+    }
+Fn[service[0]](obj)
