@@ -1,5 +1,5 @@
 {
-  "name": "uiuxcli",
+  "name": "uiux-cli",
   "version": "1.0.13",
   "description": "The command line of uiux",
   "dependencies": {
@@ -26,18 +26,18 @@
     "webpack-dev-server": "4.15.1"
   },
   "bin": {
-    "uiux": "./bin/uiux"
+    "ui-ux": "./bin/ui-ux"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/akq/uiuxcli.git"
+    "url": "git+https://github.com/PiersZhang/uiux-cli.git"
   },
-  "author": "akq",
+  "author": "PiersZhang",
   "bugs": {
-    "url": "https://github.com/akq/uiuxcli/issues"
+    "url": "https://github.com/PiersZhang/uiux-cli/issues"
   },
-  "homepage": "https://github.com/akq/uiuxcli",
-  "license": "Apache 2.0",
+  "homepage": "https://github.com/PiersZhang/uiux-cli.git",
+  "license": "MIT",
   "devDependencies": {
     "@babel/preset-env": "^7.24.6",
     "@babel/preset-react": "^7.24.6",
