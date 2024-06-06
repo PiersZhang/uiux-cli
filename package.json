@@ -4,6 +4,10 @@
   "description": "The command line of uiux",
   "dependencies": {
     "@babel/core": "7.15.0",
+    "@types/node": "^20.14.2",
+    "@babel/preset-env": "^7.24.6",
+    "@babel/preset-react": "^7.24.6",
+    "@babel/preset-typescript": "^7.24.6",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "babel-loader": "8.2.2",
@@ -18,6 +22,8 @@
     "sass-loader": "^10.1.1",
     "shelljs": "^0.8.5",
     "style-loader": "3.2.1",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.4.5",
     "uiuxloader": "^2.0.3",
     "uiuxtest": "^1.0.4",
     "url-loader": "^4.1.1",
@@ -38,11 +44,5 @@
   },
   "homepage": "https://github.com/PiersZhang/uiux-cli.git",
   "license": "MIT",
-  "devDependencies": {
-    "@babel/preset-env": "^7.24.6",
-    "@babel/preset-react": "^7.24.6",
-    "@babel/preset-typescript": "^7.24.6",
-    "ts-loader": "^9.5.1",
-    "typescript": "^5.4.5"
-  }
+  "devDependencies": {}
 }

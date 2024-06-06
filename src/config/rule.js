@@ -66,12 +66,7 @@ exp.svg = (opt) => ({
 exp.ts = (opt) => ({ 
     test: /\.(ts|tsx)$/,
     exclude: /node_modules/, 
-    use: {
-        loader: "ts-loader",
-        options: {
-            presets: ["@babel/preset-react", "@babel/preset-typescript"]
-        }
-    },
+    use: "ts-loader"
     
 })
 
